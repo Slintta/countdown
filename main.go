@@ -29,7 +29,7 @@ func shortDur(d time.Duration) string {
 	return s
 }
 
-func helloClock() {
+func clockLoop() {
 	setTargetTime()
 
 	ticker := time.NewTicker(time.Second)
@@ -44,6 +44,7 @@ func helloClock() {
 			menuet.App().SetMenuState(&menuet.MenuState{
 				Title: shortDur(duration),
 			})
+
 			menuet.App().MenuChanged()
 		}
 	}
@@ -54,14 +55,18 @@ func setTargetTime() {
 	alert := menuet.Alert{
 		MessageText:     "Input target time.",
 		InformativeText: "Default is 2022-02-18 16:35\n\n2022/2/18 16:35\n2/18/2022 16:35\n18/2/2022 16:35\nAre all fine.",
-		Buttons:         []string{"OK", "Quit"},
+		Buttons:         []string{"OK", "Cancel"},
 		Inputs:          []string{placeholder},
 	}
 
 	alertClicked := menuet.App().Alert(alert)
 
 	if alertClicked.Button == 1 {
-		os.Exit(0)
+		if targetTime.IsZero() {
+			os.Exit(0)
+		}
+
+		return
 	}
 
 	dateStr := alertClicked.Inputs[0]
@@ -80,17 +85,26 @@ func setTargetTime() {
 }
 
 func menuItems() []menuet.MenuItem {
-	items := []menuet.MenuItem{}
+	items := []menuet.MenuItem{
+		{
+			Text: "Made with love",
+			Clicked: func() {
+				menuet.App().Alert(menuet.Alert{
+					MessageText: "mua~",
+				})
+			},
+		},
+	}
+
+	items = append(items, menuet.MenuItem{
+		Type: menuet.Separator,
+	})
 
 	if !targetTime.IsZero() {
 		items = append(items, menuet.MenuItem{
 			Text: fmt.Sprintf("Target: %s", targetTime.String()),
 		})
 	}
-
-	items = append(items, menuet.MenuItem{
-		Type: menuet.Separator,
-	})
 
 	items = append(items, menuet.MenuItem{
 		Text:    "Set target",
@@ -101,7 +115,7 @@ func menuItems() []menuet.MenuItem {
 }
 
 func main() {
-	go helloClock()
+	go clockLoop()
 	menuet.App().Children = menuItems
 	menuet.App().Label = "me.shanicky.countdown"
 	menuet.App().RunApplication()
