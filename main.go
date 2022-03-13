@@ -122,6 +122,10 @@ func menuItems() []menuet.MenuItem {
 	return items
 }
 func main() {
+	menuet.App().Notification(menuet.Notification{
+		Title: "Test notification!",
+	})
+
 	go clockLoop()
 	menuet.App().Children = menuItems
 	menuet.App().Label = "me.shanicky.countdown"
