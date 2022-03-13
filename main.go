@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/araddon/dateparse"
+	"github.com/spf13/cast"
 	"os"
 	"strings"
 	"time"
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	placeholder = "2022-02-18 16:35"
+	placeholder        = "2022-02-18 16:35"
+	elapsedPlaceholder = "1h"
 )
 
 var (
@@ -30,7 +32,7 @@ func shortDur(d time.Duration) string {
 }
 
 func clockLoop() {
-	setTargetTime()
+	choose()
 
 	ticker := time.NewTicker(time.Second)
 
@@ -58,8 +60,39 @@ func clockLoop() {
 	}
 }
 
-func setTargetTime() {
+func setTimeElapsed() {
+	alert := menuet.Alert{
+		MessageText:     "Input time elapsed.",
+		InformativeText: "Default is 1 hour later",
+		Buttons:         []string{"OK", "Cancel"},
+		Inputs:          []string{elapsedPlaceholder},
+	}
 
+	alertClicked := menuet.App().Alert(alert)
+
+	if alertClicked.Button == 1 {
+		if targetTime.IsZero() {
+			os.Exit(0)
+		}
+
+		return
+	}
+
+	dateStr := alertClicked.Inputs[0]
+
+	if alertClicked.Button == 0 && dateStr == "" {
+		dateStr = placeholder
+	}
+
+	duration, err := cast.ToDurationE(dateStr)
+	if err != nil {
+		panic(err)
+	}
+
+	targetTime = time.Now().Add(duration)
+}
+
+func setTargetTime() {
 	alert := menuet.Alert{
 		MessageText:     "Input target time.",
 		InformativeText: "Default is 2022-02-18 16:35\n\n2022/2/18 16:35\n2/18/2022 16:35\n18/2/2022 16:35\nAre all fine.",
@@ -92,6 +125,24 @@ func setTargetTime() {
 	targetTime = t
 }
 
+func choose() {
+	alert := menuet.Alert{
+		MessageText: "Choose mode.",
+		Buttons:     []string{"Target mode", "Countdown mode", "Cancel"},
+	}
+
+	alertClicked := menuet.App().Alert(alert)
+
+	switch alertClicked.Button {
+	case 0:
+		setTargetTime()
+	case 1:
+		setTimeElapsed()
+	default:
+		os.Exit(0)
+	}
+}
+
 func menuItems() []menuet.MenuItem {
 	items := []menuet.MenuItem{
 		{
@@ -119,10 +170,15 @@ func menuItems() []menuet.MenuItem {
 		Clicked: setTargetTime,
 	})
 
+	items = append(items, menuet.MenuItem{
+		Text:    "Set elapsed",
+		Clicked: setTimeElapsed,
+	})
+
 	return items
 }
 func main() {
-	menuet.App().Notification(menuet.Notification{
+	go menuet.App().Notification(menuet.Notification{
 		Title: "Test notification!",
 	})
 
