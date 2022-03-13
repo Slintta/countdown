@@ -41,6 +41,14 @@ func clockLoop() {
 			duration := targetTime.Sub(time.Now())
 			duration -= duration % time.Second
 
+			if duration == 0 {
+				menuet.App().Notification(menuet.Notification{
+					Title:      "Time's up!",
+					Message:    fmt.Sprintf("Target is %s", targetTime.String()),
+					Identifier: "countdown",
+				})
+			}
+
 			menuet.App().SetMenuState(&menuet.MenuState{
 				Title: shortDur(duration),
 			})
@@ -113,7 +121,6 @@ func menuItems() []menuet.MenuItem {
 
 	return items
 }
-
 func main() {
 	go clockLoop()
 	menuet.App().Children = menuItems
