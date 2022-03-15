@@ -12,12 +12,13 @@ import (
 )
 
 const (
-	placeholder        = "2022-02-18 16:35"
+	targetPlaceholder  = "2022-02-18 16:35"
 	elapsedPlaceholder = "1h"
 )
 
 var (
-	targetTime time.Time
+	targetTime    = time.Time{}
+	allowNegative = false
 )
 
 func shortDur(d time.Duration) string {
@@ -51,6 +52,16 @@ func clockLoop() {
 				})
 			}
 
+			if duration < 0 && !allowNegative {
+				menuet.App().SetMenuState(&menuet.MenuState{
+					Image: "icon.icns",
+				})
+
+				targetTime = time.Time{}
+
+				continue
+			}
+
 			menuet.App().SetMenuState(&menuet.MenuState{
 				Title: shortDur(duration),
 			})
@@ -81,7 +92,7 @@ func setTimeElapsed() {
 	dateStr := alertClicked.Inputs[0]
 
 	if alertClicked.Button == 0 && dateStr == "" {
-		dateStr = placeholder
+		dateStr = targetPlaceholder
 	}
 
 	duration, err := cast.ToDurationE(dateStr)
@@ -97,7 +108,7 @@ func setTargetTime() {
 		MessageText:     "Input target time.",
 		InformativeText: "Default is 2022-02-18 16:35\n\n2022/2/18 16:35\n2/18/2022 16:35\n18/2/2022 16:35\nAre all fine.",
 		Buttons:         []string{"OK", "Cancel"},
-		Inputs:          []string{placeholder},
+		Inputs:          []string{targetPlaceholder},
 	}
 
 	alertClicked := menuet.App().Alert(alert)
@@ -113,7 +124,7 @@ func setTargetTime() {
 	dateStr := alertClicked.Inputs[0]
 
 	if alertClicked.Button == 0 && dateStr == "" {
-		dateStr = placeholder
+		dateStr = targetPlaceholder
 	}
 
 	tz, _ := time.LoadLocation("Asia/Shanghai")
@@ -166,13 +177,21 @@ func menuItems() []menuet.MenuItem {
 	}
 
 	items = append(items, menuet.MenuItem{
-		Text:    "Set target",
+		Text:    "Set target time",
 		Clicked: setTargetTime,
 	})
 
 	items = append(items, menuet.MenuItem{
-		Text:    "Set elapsed",
+		Text:    "Set elapsed duration",
 		Clicked: setTimeElapsed,
+	})
+
+	items = append(items, menuet.MenuItem{
+		Text:  "Allow negative time",
+		State: allowNegative,
+		Clicked: func() {
+			allowNegative = !allowNegative
+		},
 	})
 
 	return items
